@@ -50,17 +50,12 @@ final class CmuxFeatureFlags {
 
     private static let overrideKeyPrefix = "cmux.flags.override."
 
-    // Order is load-bearing for the typed accessors below. A keyed lookup would
-    // repeat flag-key literals and violate the feature-flag lint's single
-    // evaluation-site rule.
-    static let allFlags: [CmuxFeatureFlagDefinition] = {
-        [
-            // FLAG(key: pro-upgrade-ui-enabled-release, owner: lawrencecchen,
-            //      reviewBy: 2026-10-01, defaultWhenUnavailable: false)
-            // Shows the Pro upgrade entrypoints (sidebar badge, Settings Account
-            // card, palette command, Help menu item). Release builds hide them until
-            // the PostHog flag is enabled; DEBUG keeps them visible for dogfood.
-            CmuxFeatureFlagDefinition(
+    // FLAG(key: pro-upgrade-ui-enabled-release, owner: lawrencecchen,
+        //      reviewBy: 2026-10-01, defaultWhenUnavailable: false)
+        // Shows the Pro upgrade entrypoints (sidebar badge, Settings Account
+        // card, palette command, Help menu item). Release builds hide them until
+        // the PostHog flag is enabled; DEBUG keeps them visible for dogfood.
+    private static let proUpgradeDefinition = CmuxFeatureFlagDefinition(
                 key: "pro-upgrade-ui-enabled-release",
                 title: String(localized: "featureFlags.proUpgrade.title", defaultValue: "Pro upgrade UI"),
                 flagDescription: String(
@@ -68,14 +63,14 @@ final class CmuxFeatureFlags {
                     defaultValue: "Shows Pro upgrade entrypoints in the sidebar, Settings, command palette, and Help menu."
                 ),
                 defaultWhenUnavailable: CmuxFeatureFlags.proUpgradeUIDefault
-            ),
+            )
 
-            // FLAG(key: mobile-connect-button-enabled-release, owner: lawrencecchen,
-            //      reviewBy: 2026-10-01, defaultWhenUnavailable: true)
-            // Shows the top-right iPhone button that opens the Mobile Connect
-            // (phone pairing) window. Default keeps it visible when flags are
-            // unavailable; the window it opens ships in every build.
-            CmuxFeatureFlagDefinition(
+        // FLAG(key: mobile-connect-button-enabled-release, owner: lawrencecchen,
+        //      reviewBy: 2026-10-01, defaultWhenUnavailable: true)
+        // Shows the top-right iPhone button that opens the Mobile Connect
+        // (phone pairing) window. Default keeps it visible when flags are
+        // unavailable; the window it opens ships in every build.
+    private static let mobileConnectDefinition = CmuxFeatureFlagDefinition(
                 key: "mobile-connect-button-enabled-release",
                 title: String(localized: "featureFlags.mobileConnect.title", defaultValue: "Mobile Connect button"),
                 flagDescription: String(
@@ -83,16 +78,16 @@ final class CmuxFeatureFlags {
                     defaultValue: "Shows the iPhone button that opens the Mobile Connect pairing window."
                 ),
                 defaultWhenUnavailable: CmuxFeatureFlags.mobileConnectButtonDefault
-            ),
+            )
 
-            // FLAG(key: cloud-vm-ui-enabled-release, owner: lawrencecchen,
-            //      reviewBy: 2026-10-01, defaultWhenUnavailable: false)
-            // Shows the Cloud VM entrypoints: the new-workspace dropdown section
-            // (Open/Fork/Checkpoint/Restore/Advanced), the caret's direct Cloud
-            // VM menu, and the command-palette Cloud VM commands. Release builds
-            // hide them until the PostHog flag is enabled; DEBUG keeps them
-            // visible for dogfood.
-            CmuxFeatureFlagDefinition(
+        // FLAG(key: cloud-vm-ui-enabled-release, owner: lawrencecchen,
+        //      reviewBy: 2026-10-01, defaultWhenUnavailable: false)
+        // Shows the Cloud VM entrypoints: the new-workspace dropdown section
+        // (Open/Fork/Checkpoint/Restore/Advanced), the caret's direct Cloud
+        // VM menu, and the command-palette Cloud VM commands. Release builds
+        // hide them until the PostHog flag is enabled; DEBUG keeps them
+        // visible for dogfood.
+    private static let cloudVMDefinition = CmuxFeatureFlagDefinition(
                 key: "cloud-vm-ui-enabled-release",
                 title: String(localized: "featureFlags.cloudVM.title", defaultValue: "Cloud VM UI"),
                 flagDescription: String(
@@ -100,14 +95,14 @@ final class CmuxFeatureFlags {
                     defaultValue: "Shows Cloud VM entrypoints in the new-workspace dropdown and command palette."
                 ),
                 defaultWhenUnavailable: CmuxFeatureFlags.cloudVMUIDefault
-            ),
+            )
 
-            // FLAG(key: agent-chat-ui-enabled-release, owner: lawrencecchen,
-            //      reviewBy: 2026-10-01, defaultWhenUnavailable: false)
-            // Shows the Agent Chat entrypoints: the new-workspace dropdown item,
-            // command-palette command, surface-tab-bar button, and shared action
-            // executor. Hidden by default until the sidecar UX is ready to ship.
-            CmuxFeatureFlagDefinition(
+        // FLAG(key: agent-chat-ui-enabled-release, owner: lawrencecchen,
+        //      reviewBy: 2026-10-01, defaultWhenUnavailable: false)
+        // Shows the Agent Chat entrypoints: the new-workspace dropdown item,
+        // command-palette command, surface-tab-bar button, and shared action
+        // executor. Hidden by default until the sidecar UX is ready to ship.
+    private static let agentChatDefinition = CmuxFeatureFlagDefinition(
                 key: "agent-chat-ui-enabled-release",
                 title: String(localized: "featureFlags.agentChat.title", defaultValue: "Agent Chat UI"),
                 flagDescription: String(
@@ -115,13 +110,13 @@ final class CmuxFeatureFlags {
                     defaultValue: "Shows Agent Chat entrypoints in the new-workspace dropdown, command palette, and surface tab bar."
                 ),
                 defaultWhenUnavailable: CmuxFeatureFlags.agentChatUIDefault
-            ),
+            )
 
-            // FLAG(key: sidebar-workspace-agent-spinner-experiment, owner: lawrencecchen,
-            //      reviewBy: 2026-10-01, defaultWhenUnavailable: false)
-            // Shows the coding-agent activity spinner in workspace rows. Hidden
-            // by default while multi-agent lifecycle edge cases are investigated.
-            CmuxFeatureFlagDefinition(
+        // FLAG(key: sidebar-workspace-agent-spinner-experiment, owner: lawrencecchen,
+        //      reviewBy: 2026-10-01, defaultWhenUnavailable: false)
+        // Shows the coding-agent activity spinner in workspace rows. Hidden
+        // by default while multi-agent lifecycle edge cases are investigated.
+    private static let sidebarWorkspaceAgentSpinnerDefinition = CmuxFeatureFlagDefinition(
                 key: "sidebar-workspace-agent-spinner-experiment",
                 title: String(
                     localized: "featureFlags.sidebarWorkspaceAgentSpinner.title",
@@ -132,14 +127,14 @@ final class CmuxFeatureFlags {
                     defaultValue: "Shows a spinner in workspace rows while coding agents are running."
                 ),
                 defaultWhenUnavailable: CmuxFeatureFlags.sidebarWorkspaceAgentSpinnerDefault
-            ),
+            )
 
-            // FLAG(key: feed-ui-enabled-release, owner: lawrencecchen,
-            //      reviewBy: 2026-10-01, defaultWhenUnavailable: true)
-            // Shows Feed in the right sidebar, new-workspace menu, and command
-            // palette. The default ships Feed to everyone while retaining a
-            // remote kill switch for operational regressions.
-            CmuxFeatureFlagDefinition(
+        // FLAG(key: feed-ui-enabled-release, owner: lawrencecchen,
+        //      reviewBy: 2026-10-01, defaultWhenUnavailable: true)
+        // Shows Feed in the right sidebar, new-workspace menu, and command
+        // palette. The default ships Feed to everyone while retaining a
+        // remote kill switch for operational regressions.
+    private static let feedDefinition = CmuxFeatureFlagDefinition(
                 key: "feed-ui-enabled-release",
                 title: String(localized: "featureFlags.feed.title", defaultValue: "Feed UI"),
                 flagDescription: String(
@@ -147,32 +142,41 @@ final class CmuxFeatureFlags {
                     defaultValue: "Shows Feed in the right sidebar, new-workspace menu, and command palette."
                 ),
                 defaultWhenUnavailable: CmuxFeatureFlags.feedUIDefault
-            ),
+            )
+
+    static let allFlags: [CmuxFeatureFlagDefinition] = {
+        [
+            proUpgradeDefinition,
+            mobileConnectDefinition,
+            cloudVMDefinition,
+            agentChatDefinition,
+            sidebarWorkspaceAgentSpinnerDefinition,
+            feedDefinition,
         ]
     }()
 
     var isProUpgradeUIEnabled: Bool {
-        effectiveValue(for: Self.allFlags[0])
+        effectiveValue(for: Self.proUpgradeDefinition)
     }
 
     var isMobileConnectButtonEnabled: Bool {
-        effectiveValue(for: Self.allFlags[1])
+        effectiveValue(for: Self.mobileConnectDefinition)
     }
 
     var isCloudVMUIEnabled: Bool {
-        effectiveValue(for: Self.allFlags[2])
+        effectiveValue(for: Self.cloudVMDefinition)
     }
 
     var isAgentChatUIEnabled: Bool {
-        effectiveValue(for: Self.allFlags[3])
+        effectiveValue(for: Self.agentChatDefinition)
     }
 
     var isSidebarWorkspaceAgentSpinnerEnabled: Bool {
-        effectiveValue(for: Self.allFlags[4])
+        effectiveValue(for: Self.sidebarWorkspaceAgentSpinnerDefinition)
     }
 
     var isFeedUIEnabled: Bool {
-        effectiveValue(for: Self.allFlags[5])
+        effectiveValue(for: Self.feedDefinition)
     }
 
     @ObservationIgnored

@@ -26,6 +26,9 @@ final class FeedCoordinator: @unchecked Sendable {
     @MainActor private(set) var store: WorkstreamStore!
 
     private let waiterRegistry = FeedBlockingWaiterRegistry()
+    let jumpResolver: FeedJumpResolver
+    let socketEncoder = FeedSocketEncoder()
+    private let timeoutClock: ContinuousClock
 
     /// One kqueue-backed DispatchSource per distinct agent PID we've
     /// ever seen. The kernel fires `.exit` the instant the process
@@ -46,7 +49,13 @@ final class FeedCoordinator: @unchecked Sendable {
     /// methods.
     @MainActor var pendingAttentionStates: [AttentionTarget: AttentionOverlayState] = [:]
 
-    private init() {}
+    private init(
+        jumpResolver: FeedJumpResolver = FeedJumpResolver(),
+        timeoutClock: ContinuousClock = ContinuousClock()
+    ) {
+        self.jumpResolver = jumpResolver
+        self.timeoutClock = timeoutClock
+    }
 
     /// Must be called once at app launch to install the store.
     @MainActor
@@ -93,7 +102,7 @@ final class FeedCoordinator: @unchecked Sendable {
     func ingestBlocking(
         event: WorkstreamEvent,
         waitTimeout: TimeInterval
-    ) -> IngestBlockingResult {
+    ) async -> IngestBlockingResult {
         guard let requestId = event.requestId, waitTimeout > 0 else {
             Task { @MainActor in
                 FeedCoordinator.shared.store.ingest(event)
@@ -106,76 +115,75 @@ final class FeedCoordinator: @unchecked Sendable {
 
         // Register the waiter before the store sees the event so a very
         // fast reply can't slip through.
-        let semaphore = waiterRegistry.register(requestID: requestId)
+        guard let decisions = await waiterRegistry.register(requestID: requestId) else {
+            return .timedOut(itemId: nil)
+        }
 
         // Hop to main to actually insert the item + install the
         // kqueue watcher for the agent's PID. The watcher handler
         // caps the pending lifetime to the agent process lifetime
         // — no polling, no leaked cards when the agent is killed.
         let resolvedAttentionTarget = Self.isBlockingDecisionEvent(event.hookEventName)
-            ? Self.resolveAttentionTarget(event: event)
+            ? resolveAttentionTarget(event: event)
             : nil
-        let itemID: UUID? = DispatchQueue.main.sync {
-            MainActor.assumeIsolated {
-                FeedCoordinator.shared.store.ingest(event)
-                let itemID = FeedCoordinator.shared.store.items.last?.id
-                if let ppid = event.ppid, ppid > 0 {
-                    FeedCoordinator.shared.armPidWatcher(ppid: ppid)
-                }
-                // Surface in-app attention (needs-input status + bell +
-                // workspace elevation) for the blocking decision. This fires
-                // regardless of app focus, unlike the desktop banner below,
-                // so the pending decision is visible in the sidebar even
-                // while the user is in another workspace of the same window.
-                // The target is resolved before entering this main-thread
-                // section so hook-session disk I/O never extends the UI
-                // critical section.
-                // The target is recorded on the waiter here — inside the
-                // ingest `main.sync`, before the card can render and a reply
-                // can fire — so the overlay is cleared exactly once when the
-                // decision concludes (no race with `deliverReply`).
-                if let target = FeedCoordinator.shared.surfaceBlockingDecisionAttention(
-                    event: event,
-                    resolved: resolvedAttentionTarget
-                ) {
-                    FeedCoordinator.shared.waiterRegistry.setAttentionTarget(
-                        target,
-                        requestID: requestId
-                    )
-                }
-                #if DEBUG
-                FeedCoordinatorTestHooks.afterBlockingEventIngested?(event, requestId)
-                #endif
-                return itemID
+        let ingestResult: (itemID: UUID?, attentionTarget: AttentionTarget?) = await MainActor.run {
+            self.store.ingest(event)
+            let itemID = self.store.items.last?.id
+            if let ppid = event.ppid, ppid > 0 {
+                self.armPidWatcher(ppid: ppid)
             }
+            let attentionTarget = self.surfaceBlockingDecisionAttention(
+                event: event,
+                resolved: resolvedAttentionTarget
+            )
+            return (itemID, attentionTarget)
+        }
+        guard await waiterRegistry.recordIngest(
+            itemID: ingestResult.itemID,
+            attentionTarget: ingestResult.attentionTarget,
+            requestID: requestId
+        ) else {
+            await MainActor.run {
+                self.concludeBlockingDecisionAttentionIfPresent(ingestResult.attentionTarget)
+                if let itemID = ingestResult.itemID {
+                    self.store?.markExpired(itemID)
+                }
+            }
+            return .timedOut(itemId: ingestResult.itemID)
         }
 
-        // If this is a blocking actionable event and the app window isn't
-        // focused, post a native notification banner with inline action
-        // buttons so the user can respond without switching windows.
+        // If this blocking actionable event is still pending and the app is
+        // inactive, offer the same decision through a native banner.
         postNotificationIfStillAwaiting(event: event, requestId: requestId)
 
-        let deadline: DispatchTime = .now() + waitTimeout
-        let waitResult = semaphore.wait(timeout: deadline)
-
-        let waiter = waiterRegistry.remove(requestID: requestId)
-
-        switch waitResult {
-        case .success:
-            if let decision = waiter?.decision {
-                // `deliverReply` concludes the attention overlay on resolve.
-                return .resolved(itemId: itemID, decision: decision)
+        let deliveredDecision = await withTaskGroup(of: WorkstreamDecision?.self) { group in
+            group.addTask {
+                for await decision in decisions {
+                    return decision
+                }
+                return nil
             }
-            cancelNotification(requestId: requestId)
-            concludeAttentionOnMain(waiter?.attentionTarget)
-            expireTimedOutItem(itemID)
-            return .timedOut(itemId: itemID)
-        case .timedOut:
-            cancelNotification(requestId: requestId)
-            concludeAttentionOnMain(waiter?.attentionTarget)
-            expireTimedOutItem(itemID)
-            return .timedOut(itemId: itemID)
+            group.addTask {
+                try? await timeoutClock.sleep(for: .seconds(waitTimeout))
+                return nil
+            }
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
         }
+
+        let waiter = await waiterRegistry.remove(requestID: requestId)
+
+        if let decision = deliveredDecision ?? waiter?.decision {
+            // A decision that wins at the timeout boundary remains terminal
+            // even when Dispatch reports the timeout result first.
+            return .resolved(itemId: waiter?.itemID, decision: decision)
+        }
+
+        cancelNotification(requestId: requestId)
+        concludeAttentionOnMain(waiter?.attentionTarget)
+        expireTimedOutItem(waiter?.itemID)
+        return .timedOut(itemId: waiter?.itemID)
     }
 
     /// Concludes an attention overlay (if any) on the main actor, hopping if
@@ -194,72 +202,50 @@ final class FeedCoordinator: @unchecked Sendable {
         }
     }
 
+    @MainActor
+    private func concludeBlockingDecisionAttentionIfPresent(_ target: AttentionTarget?) {
+        guard let target else { return }
+        concludeBlockingDecisionAttention(target)
+    }
+
     /// Called by the `feed.*.reply` handlers. Marks the corresponding
     /// item resolved on the main-actor store and wakes any waiter.
-    func deliverReply(requestId: String, decision: WorkstreamDecision) {
-        let attentionTarget = waiterRegistry.deliver(decision, requestID: requestId)
+    @discardableResult
+    func deliverReply(requestId: String, decision: WorkstreamDecision) async -> Bool {
+        let delivery = await waiterRegistry.deliver(
+            decision,
+            requestID: requestId
+        )
+        guard delivery.accepted else {
+            return false
+        }
 
         // The user decided: conclude the needs-input overlay so the agent's
         // running/idle state shows through (refcounted so an overlapping
         // decision on the same panel keeps it lit until it too concludes).
-        concludeAttentionOnMain(attentionTarget)
+        concludeAttentionOnMain(delivery.attentionTarget)
 
-        let resolve: @Sendable () -> Void = { [requestId, decision] in
-            MainActor.assumeIsolated {
-                let store = FeedCoordinator.shared.store
-                guard let store else { return }
-                if let itemId = Self.findItemId(for: requestId, in: store.items) {
-                    store.markResolved(itemId, decision: decision)
-                }
-            }
-        }
-        if Thread.isMainThread {
-            resolve()
-        } else {
-            Task { @MainActor in resolve() }
+        await MainActor.run {
+            guard let store, let itemID = delivery.itemID else { return }
+            store.markResolved(itemID, decision: decision)
         }
 
         cancelNotification(requestId: requestId)
+        return true
     }
 
-    func isAwaitingDecision(requestId: String) -> Bool {
-        waiterRegistry.isAwaitingDecision(requestID: requestId)
-    }
-
-    private static func findItemId(
-        for requestId: String,
-        in items: [WorkstreamItem]
-    ) -> UUID? {
-        for item in items.reversed() {
-            switch item.payload {
-            case .permissionRequest(let rid, _, _, _) where rid == requestId:
-                return item.id
-            case .exitPlan(let rid, _, _) where rid == requestId:
-                return item.id
-            case .question(let rid, _) where rid == requestId:
-                return item.id
-            default:
-                continue
-            }
-        }
-        return nil
+    func isAwaitingDecision(requestId: String) async -> Bool {
+        await waiterRegistry.isAwaitingDecision(requestID: requestId)
     }
 
     private func expireTimedOutItem(_ itemId: UUID?) {
         guard let itemId else { return }
-        let expire: @Sendable () -> Void = { [itemId] in
-            MainActor.assumeIsolated {
-                FeedCoordinator.shared.store?.markExpired(itemId)
-            }
-        }
-        if Thread.isMainThread {
-            expire()
-        } else {
-            DispatchQueue.main.sync(execute: expire)
+        Task { @MainActor [weak self] in
+            self?.store?.markExpired(itemId)
         }
     }
 
-    enum IngestBlockingResult {
+    enum IngestBlockingResult: Sendable {
         case acknowledged(itemId: UUID?)
         case resolved(itemId: UUID?, decision: WorkstreamDecision)
         case timedOut(itemId: UUID?)
