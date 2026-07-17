@@ -103428,13 +103428,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ plan ready"
+            "value": "Plan ready"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@のプラン準備完了"
+            "value": "プランの確認"
           }
         }
       }
@@ -103547,13 +103547,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ permission"
+            "value": "Permission needed"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@の権限確認"
+            "value": "権限の確認"
           }
         }
       }
@@ -103598,13 +103598,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ question"
+            "value": "Question"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@からの質問"
+            "value": "質問"
           }
         }
       }
@@ -104448,6 +104448,55 @@
         }
       }
     },
+    "feed.time.days.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "1d" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "1日" } }
+      }
+    },
+    "feed.time.days.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%lldd" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "%lld日" } }
+      }
+    },
+    "feed.time.hours.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "1h" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "1時間" } }
+      }
+    },
+    "feed.time.hours.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%lldh" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "%lld時間" } }
+      }
+    },
+    "feed.time.minutes.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "1m" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "1分" } }
+      }
+    },
+    "feed.time.minutes.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%lldm" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "%lld分" } }
+      }
+    },
+    "feed.time.underMinute": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "<1m" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "1分未満" } }
+      }
+    },
     "feed.todos.collapse": {
       "extractionState": "manual",
       "localizations": {
@@ -104465,7 +104514,14 @@
         }
       }
     },
-    "feed.todos.moreCompleted": {
+    "feed.todos.moreCompleted.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "... +1 completed" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "... 完了が1件" } }
+      }
+    },
+    "feed.todos.moreCompleted.other": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -104482,7 +104538,14 @@
         }
       }
     },
-    "feed.todos.summary.done": {
+    "feed.todos.summary.done.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "1 done" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "完了1件" } }
+      }
+    },
+    "feed.todos.summary.done.other": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -104499,7 +104562,14 @@
         }
       }
     },
-    "feed.todos.summary.inProgress": {
+    "feed.todos.summary.inProgress.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "1 in progress" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "進行中1件" } }
+      }
+    },
+    "feed.todos.summary.inProgress.other": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -104516,7 +104586,14 @@
         }
       }
     },
-    "feed.todos.summary.open": {
+    "feed.todos.summary.open.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "1 open" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "未完了1件" } }
+      }
+    },
+    "feed.todos.summary.open.other": {
       "extractionState": "manual",
       "localizations": {
         "en": {
