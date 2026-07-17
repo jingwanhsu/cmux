@@ -2,23 +2,56 @@ import CMUXAgentLaunch
 import CmuxSettings
 import Foundation
 
-struct FeedNotificationPolicyContext {
+struct FeedNotificationPolicyContext: Sendable {
     let envelope: TerminalNotificationPolicyEnvelope
     let hooks: [CmuxResolvedNotificationHook]
     let globalConfigPath: String?
 }
 
 extension FeedNotificationPolicyContext {
-    @MainActor
+    private struct Snapshot: Sendable {
+        let envelope: TerminalNotificationPolicyEnvelope
+        let globalConfigPath: String?
+        let hookSearchDirectory: String?
+    }
+
     static func make(
         event: WorkstreamEvent,
         title: String,
         body: String
-    ) -> FeedNotificationPolicyContext {
+    ) async -> FeedNotificationPolicyContext {
+        let snapshot = await MainActor.run {
+            snapshot(event: event, title: title, body: body)
+        }
+        guard let globalConfigPath = snapshot.globalConfigPath else {
+            return FeedNotificationPolicyContext(
+                envelope: snapshot.envelope,
+                hooks: [],
+                globalConfigPath: nil
+            )
+        }
+        let hooks = await Task.detached(priority: .utility) {
+            CmuxConfigStore(
+                globalConfigPath: globalConfigPath,
+                startFileWatchers: false
+            ).notificationHooks(startingFrom: snapshot.hookSearchDirectory)
+        }.value
+        return FeedNotificationPolicyContext(
+            envelope: snapshot.envelope,
+            hooks: hooks,
+            globalConfigPath: globalConfigPath
+        )
+    }
+
+    @MainActor
+    private static func snapshot(
+        event: WorkstreamEvent,
+        title: String,
+        body: String
+    ) -> Snapshot {
         let appDelegate = AppDelegate.shared
         let workspaceID = event.workspaceId.flatMap(UUID.init(uuidString:))
         let context = workspaceID.flatMap { appDelegate?.contextContainingTabId($0) }
-            ?? appDelegate?.mainWindowContexts.values.first(where: { $0.cmuxConfigStore != nil })
         let workspace = workspaceID.flatMap { id in
             context?.tabManager.tabs.first(where: { $0.id == id })
         }
@@ -35,10 +68,16 @@ extension FeedNotificationPolicyContext {
         effects.command = false
         effects.paneFlash = false
 
-        return FeedNotificationPolicyContext(
+        let workspaceIdentity = workspaceID?.uuidString ?? ""
+        let hookSearchDirectory = workspace.map { workspace in
+            workspace.isRemoteWorkspace
+                ? nil
+                : (normalizedCWD(event.cwd) ?? workspace.surfaceTabBarDirectory)
+        } ?? nil
+        return Snapshot(
             envelope: TerminalNotificationPolicyEnvelope(
                 notification: TerminalNotificationPolicyPayload(
-                    workspaceId: event.workspaceId ?? event.sessionId,
+                    workspaceId: workspaceIdentity,
                     surfaceId: nil,
                     title: title,
                     subtitle: "",
@@ -53,12 +92,8 @@ extension FeedNotificationPolicyContext {
                 ),
                 effects: effects
             ),
-            hooks: context?.cmuxConfigStore?.notificationHooks(
-                startingFrom: workspace?.isRemoteWorkspace == true
-                    ? nil
-                    : (normalizedCWD(event.cwd) ?? workspace?.surfaceTabBarDirectory)
-            ) ?? [],
-            globalConfigPath: context?.cmuxConfigStore?.globalConfigPath
+            globalConfigPath: workspace == nil ? nil : context?.cmuxConfigStore?.globalConfigPath,
+            hookSearchDirectory: hookSearchDirectory
         )
     }
 

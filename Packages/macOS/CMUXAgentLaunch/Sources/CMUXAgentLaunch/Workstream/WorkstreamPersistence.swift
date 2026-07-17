@@ -199,7 +199,9 @@ private extension WorkstreamItem {
     }
 }
 
-private extension WorkstreamPayload {
+public extension WorkstreamPayload {
+    /// Returns a payload whose tool input and result fields are safe to persist
+    /// or expose through read-only diagnostic APIs.
     func redactedForPersistence() -> WorkstreamPayload {
         switch self {
         case .permissionRequest(let requestId, let toolName, let toolInputJSON, let pattern):
