@@ -1,0 +1,2 @@
+focusStatus=0
+enterEpochNs=1784252466628284928
