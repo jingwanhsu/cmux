@@ -1,0 +1,80 @@
+{
+  "active" : {
+    "is_browser_surface" : true,
+    "pane_id" : "DB9489A0-970B-4341-9030-026AB19B833D",
+    "pane_ref" : "pane:1",
+    "surface_id" : "BD6E85E7-D47C-489D-A8FF-9798FF5EEB14",
+    "surface_ref" : "surface:3",
+    "surface_type" : "browser",
+    "tab_id" : "BD6E85E7-D47C-489D-A8FF-9798FF5EEB14",
+    "tab_ref" : "tab:3",
+    "window_id" : "94D88565-9C86-4127-8D4E-20C5C5B2DCB7",
+    "window_ref" : "window:1",
+    "workspace_id" : "CE623B95-7265-4D23-882A-6EC3449870B6",
+    "workspace_ref" : "workspace:1"
+  },
+  "caller" : null,
+  "windows" : [
+    {
+      "active" : true,
+      "current" : true,
+      "id" : "94D88565-9C86-4127-8D4E-20C5C5B2DCB7",
+      "index" : 0,
+      "key" : true,
+      "ref" : "window:1",
+      "selected_workspace_id" : "CE623B95-7265-4D23-882A-6EC3449870B6",
+      "selected_workspace_ref" : "workspace:1",
+      "visible" : true,
+      "workspace_count" : 1,
+      "workspaces" : [
+        {
+          "active" : false,
+          "description" : null,
+          "id" : "10B0B539-445D-4F2C-9FF0-48FF012CF924",
+          "index" : 1,
+          "panes" : [
+            {
+              "active" : false,
+              "focused" : true,
+              "id" : "0F15EFBE-B7F4-4984-AFAD-F6B72F6D44E6",
+              "index" : 0,
+              "ref" : "pane:2",
+              "selected_surface_id" : "8AFFA015-06D4-48AF-9F34-0E5063A7A5A0",
+              "selected_surface_ref" : "surface:2",
+              "surface_count" : 1,
+              "surface_ids" : [
+                "8AFFA015-06D4-48AF-9F34-0E5063A7A5A0"
+              ],
+              "surface_refs" : [
+                "surface:2"
+              ],
+              "surfaces" : [
+                {
+                  "active" : false,
+                  "focused" : true,
+                  "here" : false,
+                  "id" : "8AFFA015-06D4-48AF-9F34-0E5063A7A5A0",
+                  "index" : 0,
+                  "index_in_pane" : 0,
+                  "pane_id" : "0F15EFBE-B7F4-4984-AFAD-F6B72F6D44E6",
+                  "pane_ref" : "pane:2",
+                  "ref" : "surface:2",
+                  "selected" : true,
+                  "selected_in_pane" : true,
+                  "title" : "Terminal",
+                  "tty" : null,
+                  "type" : "terminal",
+                  "url" : null
+                }
+              ]
+            }
+          ],
+          "pinned" : false,
+          "ref" : "workspace:2",
+          "selected" : false,
+          "title" : "agent-state-evidence"
+        }
+      ]
+    }
+  ]
+}

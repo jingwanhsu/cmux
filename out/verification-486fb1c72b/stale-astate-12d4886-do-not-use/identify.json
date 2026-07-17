@@ -1,0 +1,22 @@
+{
+  "app_bundle_path" : "/Users/lawrence/Library/Developer/Xcode/DerivedData/cmux-astate/Build/Products/Debug/cmux DEV astate.app",
+  "app_cli_path" : "/Users/lawrence/Library/Developer/Xcode/DerivedData/cmux-astate/Build/Products/Debug/cmux DEV astate.app/Contents/Resources/bin/cmux",
+  "app_executable_path" : "/Users/lawrence/Library/Developer/Xcode/DerivedData/cmux-astate/Build/Products/Debug/cmux DEV astate.app/Contents/MacOS/cmux DEV",
+  "bundle_identifier" : "com.cmuxterm.app.debug.astate",
+  "caller" : null,
+  "focused" : {
+    "is_browser_surface" : false,
+    "pane_id" : "DB9489A0-970B-4341-9030-026AB19B833D",
+    "pane_ref" : "pane:1",
+    "surface_id" : "56011750-FBB1-4F05-8D41-2F05BB354903",
+    "surface_ref" : "surface:1",
+    "surface_type" : "terminal",
+    "tab_id" : "56011750-FBB1-4F05-8D41-2F05BB354903",
+    "tab_ref" : "tab:1",
+    "window_id" : "94D88565-9C86-4127-8D4E-20C5C5B2DCB7",
+    "window_ref" : "window:1",
+    "workspace_id" : "CE623B95-7265-4D23-882A-6EC3449870B6",
+    "workspace_ref" : "workspace:1"
+  },
+  "socket_path" : "/tmp/cmux-debug-astate.sock"
+}

@@ -1,0 +1,8 @@
+{
+  "surface_ref": "surface:2",
+  "tty": "ttys249",
+  "current_directory": "/Users/lawrence/fun/cmuxterm-hq/worktrees/feat-agent-terminal-state-detection",
+  "agent_terminal_family": "codex",
+  "agent_terminal_state": "idle",
+  "agent_terminal_state_source": "screen"
+}

@@ -1,0 +1,26 @@
+preexisting_processes
+srw-rw-rw-@ 1 lawrence  wheel  0 Jul 16 20:35 /tmp/cmux-debug-astate.sock
+24242 /Users/lawrence/Library/Developer/Xcode/DerivedData/cmux-astate/Build/Products/Debug/cmux DEV astate.app/Contents/MacOS/cmux DEV
+24316 /bin/zsh -lc set -u
+WT=/Users/lawrence/fun/cmuxterm-hq/worktrees/feat-agent-terminal-state-detection
+OUT="$WT/out/verification-486fb1c72b"
+APP="$HOME/Library/Developer/Xcode/DerivedData/cmux-astate/Build/Products/Debug/cmux DEV astate.app"
+mkdir -p "$OUT/astate" "$OUT/abase" "$OUT/state-lab"
+{
+  printf 'expected_head=12d4886bc0\n'
+  printf 'actual_head='; git -C "$WT" rev-parse HEAD
+  printf 'app='; printf '%s\n' "$APP"
+  ls -ld "$APP"
+  codesign --verify --deep --strict --verbose=2 "$APP" 2>&1
+  codesign -dv --verbose=4 "$APP" 2>&1 | rg 'Identifier=|TeamIdentifier=|CDHash=|Authority=' || true
+} | tee "$OUT/astate/identity-and-codesign.txt"
+printf 'preexisting_processes\n' | tee "$OUT/astate/launch.txt"
+pgrep -fl 'cmux DEV astate' | tee -a "$OUT/astate/launch.txt" || true
+open -na "$APP"
+for i in $(seq 1 40); do
+  if [ -S /tmp/cmux-debug-astate.sock ]; then break; fi
+  sleep 0.25
+done
+ls -l /tmp/cmux-debug-astate.sock | tee -a "$OUT/astate/launch.txt"
+~/.local/bin/cmux-dev --socket /tmp/cmux-debug-astate.sock identify --json --id-format both | tee "$OUT/astate/identify.json"
+pgrep -fl 'cmux DEV astate' | tee -a "$OUT/astate/launch.txt"

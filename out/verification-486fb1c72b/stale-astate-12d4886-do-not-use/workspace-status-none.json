@@ -1,0 +1,15 @@
+{
+  "effective" : "review",
+  "inferred" : "review",
+  "override" : null,
+  "signals" : {
+    "all_pull_requests_merged_or_closed" : false,
+    "any_agent_needs_input" : false,
+    "any_agent_running" : false,
+    "any_open_pull_request" : true,
+    "has_pull_requests" : true,
+    "is_git_dirty" : false
+  },
+  "window_ref" : "window:1",
+  "workspace_ref" : "workspace:2"
+}
