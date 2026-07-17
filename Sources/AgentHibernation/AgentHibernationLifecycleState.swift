@@ -1,3 +1,4 @@
+import CmuxTerminalCore
 import Foundation
 
 enum AgentHibernationLifecycleState: String, Codable, Sendable, Equatable, CaseIterable {
@@ -57,7 +58,45 @@ enum AgentHibernationLifecycleStatusKeys {
         key == manualKey || key.hasPrefix("\(manualKey):")
     }
 
-    static let allowedStatusKeys: Set<String> = [
+    private static let detectionPrefix = "screen:"
+
+    static func detectionKey(familyID: String) -> String {
+        detectionPrefix + familyID
+    }
+
+    static func isDetectionKey(_ key: String) -> Bool {
+        key.hasPrefix(detectionPrefix)
+    }
+
+    static func detectionFamilyID(key: String) -> String? {
+        guard isDetectionKey(key) else { return nil }
+        return String(key.dropFirst(detectionPrefix.count))
+    }
+
+    static func resolvedStates(
+        _ panelStates: [String: AgentHibernationLifecycleState]
+    ) -> [AgentHibernationLifecycleState] {
+        var lifecycle = panelStates.filter {
+            !isManualKey($0.key) && !isDetectionKey($0.key)
+        }
+        var screen: [AgentHibernationLifecycleState] = []
+        for (key, state) in panelStates where isDetectionKey(key) {
+            guard let familyID = detectionFamilyID(key: key),
+                  let profile = AgentTerminalProfileCatalog.builtIn.profile(id: familyID) else {
+                screen.append(state)
+                continue
+            }
+            if profile.lifecycleAuthoritative {
+                if lifecycle[profile.statusKey] == nil { screen.append(state) }
+            } else {
+                lifecycle.removeValue(forKey: profile.statusKey)
+                screen.append(state)
+            }
+        }
+        return Array(lifecycle.values) + screen
+    }
+
+    static let allowedStatusKeys: Set<String> = Set(AgentTerminalProfileCatalog.builtIn.profiles.map(\.statusKey)).union([
         "amp",
         "antigravity",
         "claude_code",
@@ -75,9 +114,20 @@ enum AgentHibernationLifecycleStatusKeys {
         "pi",
         "qoder",
         "rovodev",
-    ]
+    ])
 
     static func isAllowed(_ key: String) -> Bool {
         allowedStatusKeys.contains(key)
+    }
+}
+
+extension AgentHibernationLifecycleState {
+    static func effective<S: Sequence>(_ states: S) -> AgentHibernationLifecycleState where S.Element == Self {
+        let values = Array(states)
+        if values.contains(.running) { return .running }
+        if values.contains(.needsInput) { return .needsInput }
+        if values.contains(.unknown) { return .unknown }
+        if values.contains(.idle) { return .idle }
+        return .unknown
     }
 }
